@@ -77,11 +77,7 @@ impl<T> ClockGate<T> {
         audible_frame: OutputFrame,
     ) -> Option<TimedFrame<T>> {
         let mut latest = None;
-        loop {
-            let Some(front) = self.pending.front() else {
-                break;
-            };
-
+        while let Some(front) = self.pending.front() {
             if front.generation != generation || front.seek_epoch != seek_epoch {
                 self.pending.pop_front();
                 continue;
