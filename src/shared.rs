@@ -73,7 +73,8 @@ impl SharedAudibleClockWriter {
 
         let had_current = self.inner.current_valid.load(Ordering::Relaxed);
         if had_current {
-            let current_playback = BackendTime(self.inner.current_playback_ns.load(Ordering::Relaxed));
+            let current_playback =
+                BackendTime(self.inner.current_playback_ns.load(Ordering::Relaxed));
             if observation.playback_time < current_playback {
                 return Ok(ObservationOutcome::IgnoredRegressiveTimestamp);
             }

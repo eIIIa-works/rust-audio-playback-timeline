@@ -37,9 +37,12 @@ fn future_frame_is_retained_until_audible_clock_reaches_it() {
 #[test]
 fn stale_generation_and_seek_epoch_are_discarded() {
     let mut gate = ClockGate::new();
-    gate.push(frame(Generation(1), SeekEpoch(1), 100, 1)).unwrap();
-    gate.push(frame(Generation(2), SeekEpoch(1), 110, 2)).unwrap();
-    gate.push(frame(Generation(2), SeekEpoch(2), 120, 3)).unwrap();
+    gate.push(frame(Generation(1), SeekEpoch(1), 100, 1))
+        .unwrap();
+    gate.push(frame(Generation(2), SeekEpoch(1), 110, 2))
+        .unwrap();
+    gate.push(frame(Generation(2), SeekEpoch(2), 120, 3))
+        .unwrap();
 
     assert_eq!(
         gate.take_latest_ready(Generation(2), SeekEpoch(2), OutputFrame(119)),
@@ -59,7 +62,8 @@ fn clock_jump_returns_only_newest_ready_frame() {
     let seek_epoch = SeekEpoch(9);
     let mut gate = ClockGate::new();
     for (end, payload) in [(100, 1), (200, 2), (300, 3), (400, 4)] {
-        gate.push(frame(generation, seek_epoch, end, payload)).unwrap();
+        gate.push(frame(generation, seek_epoch, end, payload))
+            .unwrap();
     }
 
     let latest = gate
@@ -83,7 +87,8 @@ fn out_of_order_frames_within_one_timeline_are_rejected() {
 #[test]
 fn clear_discards_all_pending_frames() {
     let mut gate = ClockGate::new();
-    gate.push(frame(Generation(1), SeekEpoch(1), 100, 1)).unwrap();
+    gate.push(frame(Generation(1), SeekEpoch(1), 100, 1))
+        .unwrap();
     gate.clear();
     assert!(gate.is_empty());
 }

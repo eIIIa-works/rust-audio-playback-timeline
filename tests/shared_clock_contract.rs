@@ -36,22 +36,10 @@ fn shared_clock_keeps_previous_span_for_future_current_callback() {
         .split();
 
     writer
-        .observe_callback(observation(
-            generation,
-            seek_epoch,
-            1_000_000_000,
-            100,
-            148,
-        ))
+        .observe_callback(observation(generation, seek_epoch, 1_000_000_000, 100, 148))
         .unwrap();
     writer
-        .observe_callback(observation(
-            generation,
-            seek_epoch,
-            1_003_000_000,
-            148,
-            196,
-        ))
+        .observe_callback(observation(generation, seek_epoch, 1_003_000_000, 148, 196))
         .unwrap();
 
     assert_eq!(
@@ -70,13 +58,7 @@ fn shared_clock_ignores_stale_and_regressive_observations() {
 
     assert_eq!(
         writer
-            .observe_callback(observation(
-                generation,
-                seek_epoch,
-                1_000_000_000,
-                100,
-                148,
-            ))
+            .observe_callback(observation(generation, seek_epoch, 1_000_000_000, 100, 148,))
             .unwrap(),
         ObservationOutcome::Accepted
     );
@@ -94,13 +76,7 @@ fn shared_clock_ignores_stale_and_regressive_observations() {
     );
     assert_eq!(
         writer
-            .observe_callback(observation(
-                generation,
-                seek_epoch,
-                999_000_000,
-                148,
-                196,
-            ))
+            .observe_callback(observation(generation, seek_epoch, 999_000_000, 148, 196,))
             .unwrap(),
         ObservationOutcome::IgnoredRegressiveTimestamp
     );

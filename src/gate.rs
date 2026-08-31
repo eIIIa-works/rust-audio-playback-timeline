@@ -1,5 +1,5 @@
-use std::collections::VecDeque;
 use core::fmt;
+use std::collections::VecDeque;
 
 use crate::{Generation, OutputFrame, SeekEpoch};
 

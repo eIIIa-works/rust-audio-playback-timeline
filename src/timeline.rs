@@ -118,11 +118,7 @@ impl AudibleClock {
         &mut self,
         observation: PlaybackObservation,
     ) -> Result<ObservationOutcome, ClockError> {
-        validate_observation_identity_and_span(
-            observation,
-            self.generation,
-            self.seek_epoch,
-        )?;
+        validate_observation_identity_and_span(observation, self.generation, self.seek_epoch)?;
         if observation.generation != self.generation || observation.seek_epoch != self.seek_epoch {
             return Ok(ObservationOutcome::IgnoredStale);
         }
