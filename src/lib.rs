@@ -5,6 +5,7 @@
 //! gates arbitrary timestamped metadata against that timeline.
 
 mod gate;
+mod shared;
 mod timeline;
 mod types;
 
@@ -12,5 +13,6 @@ mod types;
 pub mod cpal_adapter;
 
 pub use gate::{ClockGate, GateError, TimedFrame};
+pub use shared::{SharedAudibleClock, SharedAudibleClockReader, SharedAudibleClockWriter};
 pub use timeline::{AudibleClock, ClockError, ObservationOutcome, PlaybackObservation};
 pub use types::{BackendTime, Generation, OutputFrame, SeekEpoch};

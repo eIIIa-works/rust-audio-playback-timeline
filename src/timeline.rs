@@ -2,7 +2,7 @@ use core::fmt;
 
 use crate::{BackendTime, Generation, OutputFrame, SeekEpoch};
 
-const NANOS_PER_SECOND: u128 = 1_000_000_000;
+pub(crate) const NANOS_PER_SECOND: u128 = 1_000_000_000;
 
 /// Timing and valid-PCM extent reported for one output callback.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -52,11 +52,11 @@ impl fmt::Display for ClockError {
 impl std::error::Error for ClockError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-struct CallbackSpan {
-    playback_time: BackendTime,
-    output_frame_start: OutputFrame,
-    output_frame_end: OutputFrame,
-    playing: bool,
+pub(crate) struct CallbackSpan {
+    pub(crate) playback_time: BackendTime,
+    pub(crate) output_frame_start: OutputFrame,
+    pub(crate) output_frame_end: OutputFrame,
+    pub(crate) playing: bool,
 }
 
 impl From<PlaybackObservation> for CallbackSpan {
@@ -118,14 +118,13 @@ impl AudibleClock {
         &mut self,
         observation: PlaybackObservation,
     ) -> Result<ObservationOutcome, ClockError> {
+        validate_observation_identity_and_span(
+            observation,
+            self.generation,
+            self.seek_epoch,
+        )?;
         if observation.generation != self.generation || observation.seek_epoch != self.seek_epoch {
             return Ok(ObservationOutcome::IgnoredStale);
-        }
-        if observation.output_frame_end < observation.output_frame_start {
-            return Err(ClockError::InvalidSpan {
-                start: observation.output_frame_start,
-                end: observation.output_frame_end,
-            });
         }
         if let Some(current) = self.current {
             if observation.playback_time < current.playback_time {
@@ -142,13 +141,7 @@ impl AudibleClock {
     /// playback time base. The returned value never moves backwards within one
     /// generation/seek epoch.
     pub fn audible_frame_at(&mut self, now: BackendTime) -> OutputFrame {
-        let candidate = self
-            .current
-            .and_then(|span| frame_for_span(span, now, self.sample_rate))
-            .or_else(|| {
-                self.previous
-                    .and_then(|span| frame_for_span(span, now, self.sample_rate))
-            })
+        let candidate = frame_for_spans(self.current, self.previous, now, self.sample_rate)
             .unwrap_or(self.reported);
 
         if candidate > self.reported {
@@ -158,7 +151,39 @@ impl AudibleClock {
     }
 }
 
-fn frame_for_span(span: CallbackSpan, now: BackendTime, sample_rate: u32) -> Option<OutputFrame> {
+pub(crate) fn validate_observation_identity_and_span(
+    observation: PlaybackObservation,
+    generation: Generation,
+    seek_epoch: SeekEpoch,
+) -> Result<(), ClockError> {
+    if observation.generation != generation || observation.seek_epoch != seek_epoch {
+        return Ok(());
+    }
+    if observation.output_frame_end < observation.output_frame_start {
+        return Err(ClockError::InvalidSpan {
+            start: observation.output_frame_start,
+            end: observation.output_frame_end,
+        });
+    }
+    Ok(())
+}
+
+pub(crate) fn frame_for_spans(
+    current: Option<CallbackSpan>,
+    previous: Option<CallbackSpan>,
+    now: BackendTime,
+    sample_rate: u32,
+) -> Option<OutputFrame> {
+    current
+        .and_then(|span| frame_for_span(span, now, sample_rate))
+        .or_else(|| previous.and_then(|span| frame_for_span(span, now, sample_rate)))
+}
+
+pub(crate) fn frame_for_span(
+    span: CallbackSpan,
+    now: BackendTime,
+    sample_rate: u32,
+) -> Option<OutputFrame> {
     if now < span.playback_time {
         return None;
     }
