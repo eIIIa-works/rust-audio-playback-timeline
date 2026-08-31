@@ -36,6 +36,10 @@ pub enum ClockError {
         start: OutputFrame,
         end: OutputFrame,
     },
+    DiscontinuousSpan {
+        expected_start: OutputFrame,
+        actual_start: OutputFrame,
+    },
 }
 
 impl fmt::Display for ClockError {
@@ -45,6 +49,13 @@ impl fmt::Display for ClockError {
             Self::InvalidSpan { start, end } => {
                 write!(f, "output frame span is reversed: {start}..{end}")
             }
+            Self::DiscontinuousSpan {
+                expected_start,
+                actual_start,
+            } => write!(
+                f,
+                "callback span is discontinuous: expected start {expected_start}, got {actual_start}"
+            ),
         }
     }
 }
@@ -125,6 +136,12 @@ impl AudibleClock {
         if let Some(current) = self.current {
             if observation.playback_time < current.playback_time {
                 return Ok(ObservationOutcome::IgnoredRegressiveTimestamp);
+            }
+            if observation.output_frame_start != current.output_frame_end {
+                return Err(ClockError::DiscontinuousSpan {
+                    expected_start: current.output_frame_end,
+                    actual_start: observation.output_frame_start,
+                });
             }
         }
 
