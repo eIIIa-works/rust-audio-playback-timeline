@@ -31,9 +31,11 @@ fn observation(
 fn shared_clock_keeps_previous_span_for_future_current_callback() {
     let generation = Generation(3);
     let seek_epoch = SeekEpoch(2);
-    let clock = SharedAudibleClock::new(48_000, generation, seek_epoch).unwrap();
+    let (mut writer, reader) = SharedAudibleClock::new(48_000, generation, seek_epoch)
+        .unwrap()
+        .split();
 
-    clock
+    writer
         .observe_callback(observation(
             generation,
             seek_epoch,
@@ -42,7 +44,7 @@ fn shared_clock_keeps_previous_span_for_future_current_callback() {
             148,
         ))
         .unwrap();
-    clock
+    writer
         .observe_callback(observation(
             generation,
             seek_epoch,
@@ -53,7 +55,7 @@ fn shared_clock_keeps_previous_span_for_future_current_callback() {
         .unwrap();
 
     assert_eq!(
-        clock.audible_frame_at(BackendTime(1_002_000_000)),
+        reader.audible_frame_at(BackendTime(1_002_000_000)),
         OutputFrame(148)
     );
 }
@@ -62,10 +64,12 @@ fn shared_clock_keeps_previous_span_for_future_current_callback() {
 fn shared_clock_ignores_stale_and_regressive_observations() {
     let generation = Generation(3);
     let seek_epoch = SeekEpoch(2);
-    let clock = SharedAudibleClock::new(48_000, generation, seek_epoch).unwrap();
+    let (mut writer, reader) = SharedAudibleClock::new(48_000, generation, seek_epoch)
+        .unwrap()
+        .split();
 
     assert_eq!(
-        clock
+        writer
             .observe_callback(observation(
                 generation,
                 seek_epoch,
@@ -77,7 +81,7 @@ fn shared_clock_ignores_stale_and_regressive_observations() {
         ObservationOutcome::Accepted
     );
     assert_eq!(
-        clock
+        writer
             .observe_callback(observation(
                 Generation(99),
                 seek_epoch,
@@ -89,7 +93,7 @@ fn shared_clock_ignores_stale_and_regressive_observations() {
         ObservationOutcome::IgnoredStale
     );
     assert_eq!(
-        clock
+        writer
             .observe_callback(observation(
                 generation,
                 seek_epoch,
@@ -102,24 +106,25 @@ fn shared_clock_ignores_stale_and_regressive_observations() {
     );
 
     assert_eq!(
-        clock.audible_frame_at(BackendTime(1_000_750_000)),
+        reader.audible_frame_at(BackendTime(1_000_750_000)),
         OutputFrame(136)
     );
 }
 
 #[test]
-fn one_writer_and_one_reader_can_run_concurrently_without_locks() {
+fn one_writer_and_cloneable_readers_can_run_concurrently_without_locks() {
     const CALLBACKS: u64 = 20_000;
     let generation = Generation(7);
     let seek_epoch = SeekEpoch(4);
-    let clock = Arc::new(SharedAudibleClock::new(1_000, generation, seek_epoch).unwrap());
+    let (mut writer_handle, reader_handle) = SharedAudibleClock::new(1_000, generation, seek_epoch)
+        .unwrap()
+        .split();
     let done = Arc::new(AtomicBool::new(false));
 
-    let writer_clock = Arc::clone(&clock);
     let writer_done = Arc::clone(&done);
     let writer = thread::spawn(move || {
         for frame in 0..CALLBACKS {
-            writer_clock
+            writer_handle
                 .observe_callback(observation(
                     generation,
                     seek_epoch,
@@ -132,7 +137,7 @@ fn one_writer_and_one_reader_can_run_concurrently_without_locks() {
         writer_done.store(true, Ordering::Release);
     });
 
-    let reader_clock = Arc::clone(&clock);
+    let reader_clock = reader_handle.clone();
     let reader_done = Arc::clone(&done);
     let reader = thread::spawn(move || {
         let mut last = OutputFrame(0);
@@ -147,7 +152,7 @@ fn one_writer_and_one_reader_can_run_concurrently_without_locks() {
 
     writer.join().unwrap();
     let last_seen = reader.join().unwrap();
-    let final_frame = clock.audible_frame_at(BackendTime(u64::MAX));
+    let final_frame = reader_handle.audible_frame_at(BackendTime(u64::MAX));
 
     assert!(final_frame >= last_seen);
     assert_eq!(final_frame, OutputFrame(CALLBACKS));
