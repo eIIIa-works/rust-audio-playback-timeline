@@ -23,6 +23,10 @@ pub struct PlaybackObservation {
 pub enum ObservationOutcome {
     Accepted,
     IgnoredStale,
+    /// The backend reported a playback timestamp earlier than the last accepted
+    /// callback. Ignoring the whole observation is deliberately conservative:
+    /// an invalid timestamp must never make the logical audible position lead.
+    IgnoredRegressiveTimestamp,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -122,6 +126,11 @@ impl AudibleClock {
                 start: observation.output_frame_start,
                 end: observation.output_frame_end,
             });
+        }
+        if let Some(current) = self.current {
+            if observation.playback_time < current.playback_time {
+                return Ok(ObservationOutcome::IgnoredRegressiveTimestamp);
+            }
         }
 
         self.previous = self.current;
