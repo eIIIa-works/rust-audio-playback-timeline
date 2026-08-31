@@ -169,6 +169,44 @@ fn reported_audible_frame_is_monotonic_even_if_backend_time_moves_backwards() {
 }
 
 #[test]
+fn regressive_callback_playback_timestamp_is_ignored_without_leading_audio() {
+    let generation = Generation(1);
+    let seek_epoch = SeekEpoch(1);
+    let mut clock = AudibleClock::new(48_000, generation, seek_epoch).unwrap();
+    clock
+        .observe_callback(observation(
+            generation,
+            seek_epoch,
+            1_000_000_000,
+            100,
+            148,
+            true,
+        ))
+        .unwrap();
+    assert_eq!(
+        clock.audible_frame_at(BackendTime(1_000_500_000)),
+        OutputFrame(124)
+    );
+
+    let outcome = clock
+        .observe_callback(observation(
+            generation,
+            seek_epoch,
+            999_000_000,
+            148,
+            196,
+            true,
+        ))
+        .unwrap();
+
+    assert_eq!(outcome, ObservationOutcome::IgnoredRegressiveTimestamp);
+    assert_eq!(
+        clock.audible_frame_at(BackendTime(1_000_750_000)),
+        OutputFrame(136)
+    );
+}
+
+#[test]
 fn reset_invalidates_old_generation_and_seek_epoch_observations() {
     let generation = Generation(1);
     let seek_epoch = SeekEpoch(1);
