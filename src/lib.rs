@@ -8,6 +8,9 @@ mod gate;
 mod timeline;
 mod types;
 
+#[cfg(feature = "cpal")]
+pub mod cpal_adapter;
+
 pub use gate::{ClockGate, GateError, TimedFrame};
 pub use timeline::{AudibleClock, ClockError, ObservationOutcome, PlaybackObservation};
 pub use types::{BackendTime, Generation, OutputFrame, SeekEpoch};
