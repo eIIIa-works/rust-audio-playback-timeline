@@ -17,7 +17,11 @@ jobs:
     name: Rust tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
-      - name: Test
+      - name: Install CPAL Linux dependencies
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev pkg-config
+      - name: Test core
         run: cargo test --all-targets
+      - name: Test CPAL adapter
+        run: cargo test --all-targets --features cpal

@@ -6,4 +6,9 @@ description = "Backend-neutral audible playback timeline and clock-gated metadat
 repository = "https://github.com/eIIIa-works/rust-audio-playback-timeline"
 publish = false
 
+[features]
+default = []
+cpal = ["dep:cpal"]
+
 [dependencies]
+cpal = { version = "=0.18.1", optional = true }
