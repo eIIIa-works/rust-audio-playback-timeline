@@ -1,0 +1,18 @@
+[package]
+name = "audio-playback-timeline"
+version = "0.0.0"
+edition = "2021"
+description = "Backend-neutral audible playback timeline and clock-gated metadata for Rust audio engines"
+repository = "https://github.com/eIIIa-works/rust-audio-playback-timeline"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+keywords = ["audio", "realtime", "cpal", "timeline", "synchronization"]
+categories = ["multimedia::audio"]
+publish = false
+
+[features]
+default = []
+cpal = ["dep:cpal"]
+
+[dependencies]
+cpal = { version = "=0.18.1", optional = true }
