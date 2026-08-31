@@ -1,0 +1,9 @@
+[package]
+name = "audio-playback-timeline"
+version = "0.0.0"
+edition = "2021"
+description = "Backend-neutral audible playback timeline and clock-gated metadata for Rust audio engines"
+repository = "https://github.com/eIIIa-works/rust-audio-playback-timeline"
+publish = false
+
+[dependencies]
